@@ -113,6 +113,37 @@ export default function CustomerMenuPage() {
   const categoryRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const tabBarRef = useRef<HTMLDivElement>(null);
 
+  // ─── Handle back button to close drawers ─────────────────────
+  const hasPushedStateRef = useRef(false);
+
+  useEffect(() => {
+    const anyOpen = !!selectedItem || ordersDrawerOpen || cartOpen;
+
+    if (anyOpen && !hasPushedStateRef.current) {
+      window.history.pushState({ popup: true }, "");
+      hasPushedStateRef.current = true;
+    } else if (!anyOpen && hasPushedStateRef.current) {
+      window.history.back();
+      hasPushedStateRef.current = false;
+    }
+  }, [selectedItem, ordersDrawerOpen, cartOpen]);
+
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (hasPushedStateRef.current) {
+        hasPushedStateRef.current = false;
+        setSelectedItem(null);
+        setOrdersDrawerOpen(false);
+        setCartOpen(false);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
   // ─── Load Local Orders ────────────────────────────────────────
   useEffect(() => {
     const stored = localStorage.getItem(`orders_${slug}_${tableNumber}`);
@@ -807,6 +838,14 @@ export default function CustomerMenuPage() {
               onClick={() => setSelectedItem(null)}
             />
             <motion.div
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0.1, bottom: 0.85 }}
+              onDragEnd={(event, info) => {
+                if (info.offset.y > 100) {
+                  setSelectedItem(null);
+                }
+              }}
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
@@ -941,6 +980,14 @@ export default function CustomerMenuPage() {
               onClick={() => setCartOpen(false)}
             />
             <motion.div
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0.1, bottom: 0.85 }}
+              onDragEnd={(event, info) => {
+                if (info.offset.y > 100) {
+                  setCartOpen(false);
+                }
+              }}
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
@@ -1064,6 +1111,14 @@ export default function CustomerMenuPage() {
               onClick={() => setOrdersDrawerOpen(false)}
             />
             <motion.div
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={{ top: 0.1, bottom: 0.85 }}
+              onDragEnd={(event, info) => {
+                if (info.offset.y > 100) {
+                  setOrdersDrawerOpen(false);
+                }
+              }}
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
