@@ -230,11 +230,10 @@ export default function AdminDashboardPage() {
             <button
               key={item.key}
               onClick={() => setActiveView(item.key)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeView === item.key
-                  ? "bg-[#10b981]/10 text-[#059669]"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-              }`}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeView === item.key
+                ? "bg-[#10b981]/10 text-[#059669]"
+                : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                }`}
             >
               <item.icon className="w-4 h-4" />
               {item.label}

@@ -8,6 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSeparator,
+  InputOTPSlot,
+} from "@/components/ui/input-otp";
 import { useAuthStore } from "@/store/authStore";
 import { Shield, Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
@@ -150,14 +156,23 @@ export default function AdminLoginPage() {
                     <p className="text-[#10b981] font-semibold text-sm">{email}</p>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label className="text-slate-900/70 text-sm">Verification Code (OTP) *</Label>
-                    <Input
-                      placeholder="Enter 6-digit code"
-                      value={otp}
-                      onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").substring(0, 6))}
-                      className="bg-white border-slate-200 text-slate-900 placeholder:text-slate-900/20 focus:border-[#10b981]/50 tracking-[0.5em] text-center font-bold text-lg"
-                    />
+                  <div className="space-y-3 flex flex-col">
+                    <Label className="text-slate-900/70 flex justify-center text-sm">Verification Code (OTP) *</Label>
+                    <div className="flex justify-center py-2">
+                      <InputOTP maxLength={6} value={otp} onChange={(value) => setOtp(value)}>
+                        <InputOTPGroup>
+                          <InputOTPSlot index={0} className="w-11 h-14 sm:w-12 sm:h-14 text-xl bg-white border-slate-200 data-[active=true]:border-[#10b981] data-[active=true]:ring-[#10b981]/20" />
+                          <InputOTPSlot index={1} className="w-11 h-14 sm:w-12 sm:h-14 text-xl bg-white border-slate-200 data-[active=true]:border-[#10b981] data-[active=true]:ring-[#10b981]/20" />
+                          <InputOTPSlot index={2} className="w-11 h-14 sm:w-12 sm:h-14 text-xl bg-white border-slate-200 data-[active=true]:border-[#10b981] data-[active=true]:ring-[#10b981]/20" />
+                        </InputOTPGroup>
+                        <InputOTPSeparator className="text-slate-300" />
+                        <InputOTPGroup>
+                          <InputOTPSlot index={3} className="w-11 h-14 sm:w-12 sm:h-14 text-xl bg-white border-slate-200 data-[active=true]:border-[#10b981] data-[active=true]:ring-[#10b981]/20" />
+                          <InputOTPSlot index={4} className="w-11 h-14 sm:w-12 sm:h-14 text-xl bg-white border-slate-200 data-[active=true]:border-[#10b981] data-[active=true]:ring-[#10b981]/20" />
+                          <InputOTPSlot index={5} className="w-11 h-14 sm:w-12 sm:h-14 text-xl bg-white border-slate-200 data-[active=true]:border-[#10b981] data-[active=true]:ring-[#10b981]/20" />
+                        </InputOTPGroup>
+                      </InputOTP>
+                    </div>
                   </div>
 
                   <Button

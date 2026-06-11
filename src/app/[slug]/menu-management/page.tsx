@@ -74,19 +74,44 @@ function SortableCategory({
   itemCount,
   onClick,
   onDelete,
+  onRename,
 }: {
   category: Category;
   isSelected: boolean;
   itemCount: number;
   onClick: () => void;
   onDelete: () => void;
+  onRename: (newName: string) => Promise<void>;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition } =
     useSortable({ id: category._id });
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState(category.name);
+  const [loading, setLoading] = useState(false);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
+  };
+
+  const handleSave = async (e?: React.MouseEvent | React.KeyboardEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    if (!editName.trim() || editName.trim() === category.name) {
+      setIsEditing(false);
+      return;
+    }
+    setLoading(true);
+    try {
+      await onRename(editName.trim());
+      setIsEditing(false);
+    } catch {
+      toast.error("Failed to rename category");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -107,29 +132,70 @@ function SortableCategory({
         {...listeners}
         className="h-6 w-6 cursor-grab text-gray-300 hover:text-gray-500 shrink-0 hover:bg-transparent"
         onClick={(e) => e.stopPropagation()}
+        disabled={isEditing}
       >
         <GripVertical className="w-4 h-4" />
       </Button>
-      <span className="flex-1 text-sm font-medium truncate">
-        {category.name}
-      </span>
-      <span className="text-xs text-gray-400 shrink-0 tabular-nums">
-        {itemCount}
-      </span>
-      {isSelected && (
-        <ChevronRight className="w-3.5 h-3.5 text-[#10b981] shrink-0" />
+
+      {isEditing ? (
+        <Input
+          value={editName}
+          onChange={(e) => setEditName(e.target.value)}
+          onClick={(e) => e.stopPropagation()}
+          className="h-7 text-xs px-2 py-1 font-medium bg-white border-gray-300 flex-1"
+          autoFocus
+          disabled={loading}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSave(e);
+            if (e.key === "Escape") {
+              e.stopPropagation();
+              setEditName(category.name);
+              setIsEditing(false);
+            }
+          }}
+        />
+      ) : (
+        <span className="flex-1 text-sm font-medium truncate">
+          {category.name}
+        </span>
       )}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={(e) => {
-          e.stopPropagation();
-          onDelete();
-        }}
-        className="h-6 w-6 opacity-0 group-hover:opacity-100 hover:bg-red-50 text-gray-300 hover:text-red-500 transition-opacity shrink-0"
-      >
-        <Trash2 className="w-3.5 h-3.5" />
-      </Button>
+
+      {!isEditing && (
+        <>
+          <span className="text-xs text-gray-400 shrink-0 tabular-nums">
+            {itemCount}
+          </span>
+          {isSelected && (
+            <ChevronRight className="w-3.5 h-3.5 text-[#10b981] shrink-0" />
+          )}
+          <div className="opacity-0 group-hover:opacity-100 flex gap-0.5 transition-opacity shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEditing(true);
+              }}
+              className="h-6 w-6 hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+              title="Edit"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+              className="h-6 w-6 hover:bg-red-50 text-gray-400 hover:text-red-500"
+              title="Delete"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -249,6 +315,17 @@ export default function MenuManagementPage() {
     } catch (err: unknown) {
       const error = err as { response?: { data?: { message?: string } } };
       toast.error(error.response?.data?.message || "Delete failed");
+    }
+  };
+
+  const handleRenameCategory = async (id: string, newName: string) => {
+    try {
+      await api.put(`/api/owner/menu/categories/${id}`, { name: newName });
+      toast.success("Category renamed");
+      fetchCategories();
+    } catch {
+      toast.error("Failed to rename category");
+      throw new Error("Rename failed");
     }
   };
 
@@ -456,6 +533,7 @@ export default function MenuManagementPage() {
                           itemCount={allItemCounts[cat._id] || 0}
                           onClick={() => setSelectedCategory(cat._id)}
                           onDelete={() => handleDeleteCategory(cat._id)}
+                          onRename={(newName) => handleRenameCategory(cat._id, newName)}
                         />
                       ))}
                     </div>

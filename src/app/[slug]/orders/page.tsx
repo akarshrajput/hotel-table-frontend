@@ -10,6 +10,7 @@ import {
   closestCenter,
   DragEndEvent,
   DragStartEvent,
+  DragOverEvent,
   DragOverlay,
   PointerSensor,
   useSensor,
@@ -158,6 +159,7 @@ export default function OrdersKanbanPage() {
   const [loading, setLoading] = useState(true);
   const [activeId, setActiveId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const dragStartStatusRef = useRef<Order["status"] | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
@@ -166,13 +168,12 @@ export default function OrdersKanbanPage() {
   const fetchOrders = useCallback(async () => {
     try {
       const { data } = await api.get("/api/owner/orders");
-      // Only show today's active orders
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayOrders = data.filter(
-        (o: Order) => new Date(o.createdAt) >= today
+      // Only show orders created in the last 24 hours
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      const recentOrders = data.filter(
+        (o: Order) => new Date(o.createdAt) >= twentyFourHoursAgo
       );
-      setOrders(todayOrders);
+      setOrders(recentOrders);
     } catch {
       toast.error("Failed to load orders");
     } finally {
@@ -218,21 +219,83 @@ export default function OrdersKanbanPage() {
       );
     }
 
+    // Periodically remove orders older than 24 hours
+    const interval = setInterval(() => {
+      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+      setOrders((prev) =>
+        prev.filter((o) => new Date(o.createdAt) >= twentyFourHoursAgo)
+      );
+    }, 60000);
+
     return () => {
+      clearInterval(interval);
       disconnectSocket();
     };
   }, [fetchOrders]);
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
+    const orderId = event.active.id as string;
+    const order = orders.find((o) => o._id === orderId);
+    if (order) {
+      dragStartStatusRef.current = order.status;
+    }
+    setActiveId(orderId);
   };
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    setActiveId(null);
+  const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
     if (!over) return;
 
+    const activeId = active.id as string;
+    const overColumn = over.data?.current?.status || over.id;
+
+    // Determine target status
+    let targetStatus: Order["status"] | null = null;
+    for (const col of columns) {
+      if (overColumn === col.key) {
+        targetStatus = col.key;
+        break;
+      }
+    }
+
+    if (!targetStatus) {
+      const overOrder = orders.find((o) => o._id === over.id);
+      if (overOrder) {
+        targetStatus = overOrder.status;
+      }
+    }
+
+    if (!targetStatus) return;
+
+    // Eagerly update state during drag
+    setOrders((prev) =>
+      prev.map((o) =>
+        o._id === activeId && o.status !== targetStatus
+          ? { ...o, status: targetStatus! }
+          : o
+      )
+    );
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const originalStatus = dragStartStatusRef.current;
+    dragStartStatusRef.current = null;
+    setActiveId(null);
+
+    const { active, over } = event;
     const orderId = active.id as string;
+
+    if (!over) {
+      if (originalStatus) {
+        setOrders((prev) =>
+          prev.map((o) =>
+            o._id === orderId ? { ...o, status: originalStatus } : o
+          )
+        );
+      }
+      return;
+    }
+
     const overColumn = over.data?.current?.status || over.id;
 
     // Determine target status from where it was dropped
@@ -252,19 +315,18 @@ export default function OrdersKanbanPage() {
       }
     }
 
-    if (!targetStatus) return;
+    if (!targetStatus) {
+      if (originalStatus) {
+        setOrders((prev) =>
+          prev.map((o) =>
+            o._id === orderId ? { ...o, status: originalStatus } : o
+          )
+        );
+      }
+      return;
+    }
 
-    const order = orders.find((o) => o._id === orderId);
-    if (!order || order.status === targetStatus) return;
-
-    // Optimistic update
-    setOrders((prev) =>
-      prev.map((o) =>
-        o._id === orderId
-          ? { ...o, status: targetStatus as Order["status"] }
-          : o
-      )
-    );
+    if (targetStatus === originalStatus) return;
 
     try {
       await api.patch(`/api/owner/orders/${orderId}/status`, {
@@ -274,6 +336,19 @@ export default function OrdersKanbanPage() {
       fetchOrders();
       toast.error("Failed to update order status");
     }
+  };
+
+  const handleDragCancel = () => {
+    const originalStatus = dragStartStatusRef.current;
+    dragStartStatusRef.current = null;
+    if (activeId && originalStatus) {
+      setOrders((prev) =>
+        prev.map((o) =>
+          o._id === activeId ? { ...o, status: originalStatus } : o
+        )
+      );
+    }
+    setActiveId(null);
   };
 
   if (loading) {
@@ -294,7 +369,9 @@ export default function OrdersKanbanPage() {
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
       >
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
           {columns.map((col) => {

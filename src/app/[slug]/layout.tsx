@@ -89,9 +89,8 @@ export default function OwnerLayout({
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform lg:transform-none ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        }`}
+        className={`fixed lg:static inset-y-0 left-0 z-50 w-64 bg-white border-r border-gray-200 flex flex-col transform transition-transform lg:transform-none ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          }`}
       >
         <div className="p-6 border-b border-gray-100">
           <div className="flex items-center gap-2">
@@ -111,11 +110,10 @@ export default function OwnerLayout({
               key={item.key}
               href={`/${slug}/${item.key}`}
               onClick={() => setSidebarOpen(false)}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                activeKey === item.key
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${activeKey === item.key
                   ? "bg-[#10b981]/10 text-[#059669]"
                   : "text-gray-500 hover:bg-gray-50 hover:text-gray-700"
-              }`}
+                }`}
             >
               <item.icon className="w-4 h-4" />
               {item.label}

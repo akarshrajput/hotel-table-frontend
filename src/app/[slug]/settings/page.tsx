@@ -16,6 +16,9 @@ export default function SettingsPage() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [primaryColor, setPrimaryColor] = useState("#10b981");
+  const [rating, setRating] = useState("4.2");
+  const [ratingCount, setRatingCount] = useState("100");
+  const [averagePrepTime, setAveragePrepTime] = useState("15-20");
 
   useEffect(() => {
     const fetchSettings = async () => {
@@ -25,6 +28,9 @@ export default function SettingsPage() {
           setName(data.restaurant.name || "");
           setDescription(data.restaurant.description || "");
           setPrimaryColor(data.restaurant.primaryColor || "#10b981");
+          setRating(data.restaurant.rating?.toString() || "4.2");
+          setRatingCount(data.restaurant.ratingCount?.toString() || "100");
+          setAveragePrepTime(data.restaurant.averagePrepTime || "15-20");
         }
       } catch (error) {
         toast.error("Failed to load restaurant settings");
@@ -47,6 +53,9 @@ export default function SettingsPage() {
       payload.append("name", name);
       payload.append("description", description);
       payload.append("primaryColor", primaryColor);
+      payload.append("rating", rating);
+      payload.append("ratingCount", ratingCount);
+      payload.append("averagePrepTime", averagePrepTime);
 
       // Note: If you want to add image uploads (logo, cover) in the future, 
       // you would append the File objects to this FormData payload.
@@ -117,6 +126,37 @@ export default function SettingsPage() {
                 placeholder="Tell your customers about your restaurant..."
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="rating">Rating (e.g. 4.2)</Label>
+                <Input
+                  id="rating"
+                  placeholder="4.2"
+                  value={rating}
+                  onChange={(e) => setRating(e.target.value)}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ratingCount">Rating Count</Label>
+                <Input
+                  id="ratingCount"
+                  placeholder="100"
+                  value={ratingCount}
+                  onChange={(e) => setRatingCount(e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="averagePrepTime">Average Prep Time (e.g. 15-20)</Label>
+              <Input
+                id="averagePrepTime"
+                placeholder="15-20"
+                value={averagePrepTime}
+                onChange={(e) => setAveragePrepTime(e.target.value)}
               />
             </div>
           </CardContent>
